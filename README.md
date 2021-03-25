@@ -18,11 +18,11 @@ num2bits/data/case01
 num2bits/data/case01/output.json
 num2bits/data/case01/input.json
 num2bits/circuit.circom
-```
 
 # compile the circuit
 $ npx snarkit compile num2bits
 # test the circuit
 $ npx snarkit test num2bits
+```
 
 
