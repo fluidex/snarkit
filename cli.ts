@@ -15,7 +15,7 @@ async function main() {
       .option('-v, --verbose', 'print verbose log', true)
       .action(async (circuit_dir, options) => {
         console.log({ circuit_dir, options });
-        await parepareCircuitDir(circuit_dir, { alwaysRecompile: option.force_recompile, verbose: option.verbose });
+        await parepareCircuitDir(circuit_dir, { alwaysRecompile: options.force_recompile, verbose: options.verbose });
       });
 
     program

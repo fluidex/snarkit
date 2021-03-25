@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as shelljs from 'shelljs';
 import * as tmp from 'tmp-promise';
 import * as circom from 'circom';
-const loadR1cs = require('r1csfile').load;
+const readR1cs = require('r1csfile').load;
 const { ZqField, utils: ffutils } = require('ffjavascript');
 
 const print_info = false;
@@ -36,7 +36,7 @@ async function checkConstraints(F, constraints, witness) {
   function evalLC(lc) {
     let v = F.zero;
     for (let w in lc) {
-      v = F.add(v, F.mul(lc[w], BigInt(witness[w])));
+      v = F.add(v, F.mul(BigInt(lc[w]), BigInt(witness[w])));
     }
     return v;
   }
@@ -127,10 +127,10 @@ function parepareCircuitDir(circuitDirName, { alwaysRecompile = false, verbose =
 }
 
 function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath }) {
-  const circomRuntimePath = path.join(__dirname, '..', '..', 'node_modules', 'circom_runtime');
-  const snarkjsPath = path.join(__dirname, '..', '..', 'node_modules', 'snarkjs', 'build', 'cli.cjs');
-  const ffiasmPath = path.join(__dirname, '..', '..', 'node_modules', 'ffiasm');
-  const circomcliPath = path.join(__dirname, '..', '..', 'node_modules', 'circom', 'cli.js');
+  const circomRuntimePath = path.join(require.resolve('circom_runtime'), '..', '..');
+  const snarkjsPath = path.join(require.resolve('snarkjs'), '..', 'build', 'cli.cjs');
+  const ffiasmPath = path.join(require.resolve('ffiasm'), '..');
+  const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
   const cFilepath = path.join(circuitDirName, 'circuit.c');
 
   var cmd: string;
@@ -197,7 +197,7 @@ class CircuitTester {
     });
     this.binaryFilePath = binaryFilePath;
 
-    this.r1cs = await loadR1cs(r1csFilepath, true, false);
+    this.r1cs = await readR1cs(r1csFilepath, true, false);
     this.symbols = await readSymbols(symFilepath);
   }
 
