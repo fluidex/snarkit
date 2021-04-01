@@ -28,7 +28,7 @@ async function testCircuitDir(circuitDir, dataDir, options) {
         //const testCaseName = path.basename(testCaseDir)
         console.log('\ntest', testCaseDir);
         const inputFile = path.join(testCaseDir, 'input.json');
-        const witnessFile = path.join(testCaseDir, 'witness.json');
+        const witnessFile = path.join(testCaseDir, 'witness.' + options.witnessFileType);
         const expectedOutputFile = path.join(testCaseDir, 'output.json');
         await witnessGenerator.generateWitness(inputFile, witnessFile);
         await checker.checkConstraintsAndOutput(witnessFile, expectedOutputFile);

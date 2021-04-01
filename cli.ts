@@ -27,12 +27,14 @@ async function main() {
       .option('-f, --force_recompile', 'ignore compiled files', false)
       .option('-v, --verbose', 'print verbose log', true)
       .option('-b, --backend', 'native or wasm', 'wasm')
+      .option('-w, --witness_type', 'bin or text', 'text')
       .description('test a circom circuit with given inputs/outputs')
       .action(async (circuit_dir, options) => {
         await testCircuitDir(circuit_dir, options.data_dir, {
           alwaysRecompile: options.force_recompile,
           verbose: options.verbose,
           backend: options.backend,
+          witnessFileType: options.witness_type == "bin" ? "wtns" : "json"
         });
       });
 
