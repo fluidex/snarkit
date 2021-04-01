@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Fluidex/circom-circuit-tester.git"
+    "url": "git+https://github.com/Fluidex/snarkit.git"
   },
   "keywords": [
     "circom",
@@ -21,10 +21,11 @@
   "author": "lispczz",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Fluidex/circom-circuit-tester/issues"
+    "url": "https://github.com/Fluidex/snarkit/issues"
   },
-  "homepage": "https://github.com/Fluidex/circom-circuit-tester#readme",
+  "homepage": "https://github.com/Fluidex/snarkit#readme",
   "dependencies": {
+    "@iden3/binfileutils": "^0.0.8",
     "chai": "^4.3.4",
     "circom": "^0.5.42",
     "circom_runtime": "^0.1.12",

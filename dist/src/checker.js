@@ -5,6 +5,29 @@ const readR1cs = require('r1csfile').load;
 const { ZqField, utils: ffutils } = require('ffjavascript');
 const { assert } = require('chai');
 const fs = require("fs");
+const binFileUtils = require('@iden3/binfileutils');
+// copyed from snarkjs/src/wtns_utils.js
+async function readWtnsHeader(fd, sections) {
+    await binFileUtils.startReadUniqueSection(fd, sections, 1);
+    const n8 = await fd.readULE32();
+    const q = await binFileUtils.readBigInt(fd, n8);
+    const nWitness = await fd.readULE32();
+    await binFileUtils.endReadSection(fd);
+    return { n8, q, nWitness };
+}
+async function readWtns(fileName) {
+    const { fd, sections } = await binFileUtils.readBinFile(fileName, 'wtns', 2);
+    const { n8, nWitness } = await readWtnsHeader(fd, sections);
+    await binFileUtils.startReadUniqueSection(fd, sections, 2);
+    const res = [];
+    for (let i = 0; i < nWitness; i++) {
+        const v = await binFileUtils.readBigInt(fd, n8);
+        res.push(v);
+    }
+    await binFileUtils.endReadSection(fd);
+    await fd.close();
+    return res;
+}
 // TOOD: type
 async function checkConstraints(F, constraints, witness) {
     if (!constraints) {
@@ -81,7 +104,13 @@ class Checker {
     }
     async checkConstraintsAndOutput(witnessFilePath, expectedOutputFile) {
         // 1. check constraints
-        const witness = JSON.parse(fs.readFileSync(witnessFilePath).toString());
+        let witness;
+        if (witnessFilePath.endsWith('json')) {
+            witness = JSON.parse(fs.readFileSync(witnessFilePath).toString());
+        }
+        else {
+            witness = await readWtns(witnessFilePath);
+        }
         const F = new ZqField(this.r1cs.prime);
         const constraints = this.r1cs.constraints;
         await checkConstraints(F, constraints, witness);

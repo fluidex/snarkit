@@ -120,7 +120,7 @@ class WitnessGenerator {
                 shelljs.exec(cmd);
             }
             else {
-                const witnessBinFile = path.join(this.circuitDirName, 'circuit.wtns');
+                const witnessBinFile = path.join(this.circuitDirName, 'witness.wtns');
                 cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessBinFile}`;
                 shelljs.exec(cmd);
                 cmd = `${NODE_CMD} ${snarkjsPath} wej ${witnessBinFile} ${witnessFilePath}`;

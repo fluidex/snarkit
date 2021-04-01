@@ -9,6 +9,7 @@ circuit.r1cs
 circuit.sym
 circuit.wasm
 circuit.wtns
+witness.wtns
 fr.asm
 fr.cpp
 fr.hpp
