@@ -87,7 +87,7 @@ class Checker {
         await checkConstraints(F, constraints, witness);
         // 2. check output
         if (expectedOutputFile) {
-            if (fs.existsSync) {
+            if (fs.existsSync(expectedOutputFile)) {
                 const expectedOutputJson = JSON.parse(fs.readFileSync(expectedOutputFile).toString());
                 await assertOut(this.symbols, witness, expectedOutputJson);
             }
