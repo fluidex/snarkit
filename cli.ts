@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-import { parepareCircuitDir, testCircuitDir } from './index';
-import * as path from 'path';
-import * as fs from 'fs';
+import { compileCircuitDir, testCircuitDir } from './index';
 import { Command } from 'commander';
 
 async function main() {
@@ -13,16 +11,29 @@ async function main() {
       .description('compile a circom circuit dir')
       .option('-f, --force_recompile', 'ignore compiled files', false)
       .option('-v, --verbose', 'print verbose log', true)
+      .option('-b, --backend', 'native or wasm', 'wasm')
       .action(async (circuit_dir, options) => {
-        console.log({ circuit_dir, options });
-        await parepareCircuitDir(circuit_dir, { alwaysRecompile: options.force_recompile, verbose: options.verbose });
+        await compileCircuitDir(circuit_dir, {
+          alwaysRecompile: options.force_recompile,
+          verbose: options.verbose,
+          backend: options.backend,
+        });
       });
 
     program
-      .command('test <circuit_dir>')
+      .command('check <circuit_dir>')
+      .alias('test')
+      .option('-d, --data_dir', 'all input.json/output.json inside this dir will be tested', '')
+      .option('-f, --force_recompile', 'ignore compiled files', false)
+      .option('-v, --verbose', 'print verbose log', true)
+      .option('-b, --backend', 'native or wasm', 'wasm')
       .description('test a circom circuit with given inputs/outputs')
       .action(async (circuit_dir, options) => {
-        await testCircuitDir(circuit_dir);
+        await testCircuitDir(circuit_dir, options.data_dir, {
+          alwaysRecompile: options.force_recompile,
+          verbose: options.verbose,
+          backend: options.backend,
+        });
       });
 
     await program.parseAsync(process.argv);

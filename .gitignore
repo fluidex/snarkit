@@ -7,6 +7,8 @@ circuit.c
 circuit.dat
 circuit.r1cs
 circuit.sym
+circuit.wasm
+circuit.wtns
 fr.asm
 fr.cpp
 fr.hpp

@@ -11,15 +11,28 @@ async function main() {
             .description('compile a circom circuit dir')
             .option('-f, --force_recompile', 'ignore compiled files', false)
             .option('-v, --verbose', 'print verbose log', true)
+            .option('-b, --backend', 'native or wasm', 'wasm')
             .action(async (circuit_dir, options) => {
-            console.log({ circuit_dir, options });
-            await index_1.parepareCircuitDir(circuit_dir, { alwaysRecompile: options.force_recompile, verbose: options.verbose });
+            await index_1.compileCircuitDir(circuit_dir, {
+                alwaysRecompile: options.force_recompile,
+                verbose: options.verbose,
+                backend: options.backend,
+            });
         });
         program
-            .command('test <circuit_dir>')
+            .command('check <circuit_dir>')
+            .alias('test')
+            .option('-d, --data_dir', 'all input.json/output.json inside this dir will be tested', '')
+            .option('-f, --force_recompile', 'ignore compiled files', false)
+            .option('-v, --verbose', 'print verbose log', true)
+            .option('-b, --backend', 'native or wasm', 'wasm')
             .description('test a circom circuit with given inputs/outputs')
             .action(async (circuit_dir, options) => {
-            await index_1.testCircuitDir(circuit_dir);
+            await index_1.testCircuitDir(circuit_dir, options.data_dir, {
+                alwaysRecompile: options.force_recompile,
+                verbose: options.verbose,
+                backend: options.backend,
+            });
         });
         await program.parseAsync(process.argv);
     }
