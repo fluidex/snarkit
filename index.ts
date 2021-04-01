@@ -22,7 +22,7 @@ async function testCircuitDir(circuitDir, dataDir, options) {
   if (dataDir == null || dataDir == '') {
     dataDir = circuitDir;
   }
-  for (const input of walkSync(dataDir, { includeBasePath: true, globs: ['**/input.json'] })) {
+  for (const input of walkSync(path.resolve(dataDir), { includeBasePath: true, globs: ['**/input.json'] })) {
     const testCaseDir = path.dirname(input);
     //const testCaseName = path.basename(testCaseDir)
     console.log('\ntest', testCaseDir);
