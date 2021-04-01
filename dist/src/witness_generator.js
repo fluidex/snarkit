@@ -116,7 +116,7 @@ class WitnessGenerator {
         else {
             const snarkjsPath = path.join(require.resolve('snarkjs'), '..', 'cli.cjs');
             if (witnessFilePath.endsWith('.wtns')) {
-                cmd = `${NODE_CMD} wc ${this.binaryFilePath} ${inputFilePath} ${witnessFilePath}`;
+                cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessFilePath}`;
                 shelljs.exec(cmd);
             }
             else {
