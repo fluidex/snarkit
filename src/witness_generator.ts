@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as shelljs from 'shelljs';
+const { stringifyBigInts, unstringifyBigInts } = require('ffjavascript').utils;
+const { wtns } = require('snarkjs');
 //import {compiler} from "circom";
 //const Scalar = require("ffjavascript").Scalar;
 
@@ -126,13 +128,33 @@ class WitnessGenerator {
         shelljs.exec(cmd);
       } else {
         const witnessBinFile = path.join(this.circuitDirName, 'witness.wtns');
-        cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessBinFile}`;
-        shelljs.exec(cmd);
+        const sameProcess = true;
+        if (sameProcess) {
+          const input = unstringifyBigInts(JSON.parse(await fs.promises.readFile(inputFilePath, 'utf8')));
+          await wtns.calculate(input, this.binaryFilePath, witnessBinFile, defaultWitnessOption());
+        } else {
+          cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessBinFile}`;
+          shelljs.exec(cmd);
+        }
         cmd = `${NODE_CMD} ${snarkjsPath} wej ${witnessBinFile} ${witnessFilePath}`;
         shelljs.exec(cmd);
       }
     }
   }
+}
+
+function defaultWitnessOption() {
+  let logFn = console.log;
+  let calculateWitnessOptions = {
+    sanityCheck: true,
+    logTrigger: logFn,
+    logOutput: logFn,
+    logStartComponent: logFn,
+    logFinishComponent: logFn,
+    logSetSignal: logFn,
+    logGetSignal: logFn,
+  };
+  return calculateWitnessOptions;
 }
 
 export { WitnessGenerator, compileCircuitDir };
