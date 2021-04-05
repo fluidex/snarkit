@@ -9,14 +9,26 @@ const { wtns } = require('snarkjs');
 const primeStr = '21888242871839275222246405745257275088548364400416034343698204186575808495617';
 const NODE_CMD = 'NODE_OPTIONS=--max-old-space-size=8192 node --stack-size=65500';
 
-async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath }) {
+function shellExecFnBuilder(verbose) {
+  function shellExec(cmd, options = {}) {
+    if (verbose) {
+      console.log(cmd);
+    }
+    return shelljs.exec(cmd, options);
+  }
+  return shellExec;
+}
+
+async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose }) {
+  const shellExec = shellExecFnBuilder(verbose);
   const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
   let cmd: string;
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
-  shelljs.exec(cmd);
+  shellExec(cmd);
 }
 
-async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath }) {
+async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose }) {
+  const shellExec = shellExecFnBuilder(verbose);
   const circomRuntimePath = path.join(require.resolve('circom_runtime'), '..', '..');
   const ffiasmPath = path.join(require.resolve('ffiasm'), '..');
   const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
@@ -24,11 +36,11 @@ async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePa
 
   let cmd: string;
   cmd = `cp ${circomRuntimePath}/c/*.cpp ${circuitDirName}`;
-  shelljs.exec(cmd);
+  shellExec(cmd);
   cmd = `cp ${circomRuntimePath}/c/*.hpp ${circuitDirName}`;
-  shelljs.exec(cmd);
+  shellExec(cmd);
   cmd = `node ${ffiasmPath}/src/buildzqfield.js -q ${primeStr} -n Fr`;
-  shelljs.exec(cmd, { cwd: circuitDirName });
+  shellExec(cmd, { cwd: circuitDirName });
   if (process.arch !== 'x64') {
     throw 'Unsupported platform ' + process.arch + '. Try wasm backend as an alternative';
   }
@@ -37,15 +49,15 @@ async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePa
   } else if (process.platform === 'linux') {
     cmd = `nasm -felf64 ${circuitDirName}/fr.asm`;
   } else throw 'Unsupported platform';
-  shelljs.exec(cmd);
+  shellExec(cmd);
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
-  shelljs.exec(cmd);
+  shellExec(cmd);
   if (process.platform === 'darwin') {
     cmd = `g++ ${circuitDirName}/main.cpp ${circuitDirName}/calcwit.cpp ${circuitDirName}/utils.cpp ${circuitDirName}/fr.cpp ${circuitDirName}/fr.o ${cFilepath} -o ${binaryFilePath} -lgmp -std=c++11 -O3 -DSANITY_CHECK`;
   } else if (process.platform === 'linux') {
     cmd = `g++ -pthread ${circuitDirName}/main.cpp ${circuitDirName}/calcwit.cpp ${circuitDirName}/utils.cpp ${circuitDirName}/fr.cpp ${circuitDirName}/fr.o ${cFilepath} -o ${binaryFilePath} -lgmp -std=c++11 -O3 -fopenmp -DSANITY_CHECK`;
   } else throw 'Unsupported platform';
-  shelljs.exec(cmd);
+  shellExec(cmd);
 }
 
 async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, backend }) {
@@ -68,9 +80,9 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
   console.log('compile', circuitDirName);
 
   if (backend === 'native') {
-    await compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath });
+    await compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose });
   } else {
-    await compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath });
+    await compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose });
   }
   return { circuitFilePath, r1csFilepath, symFilepath, binaryFilePath };
 }
