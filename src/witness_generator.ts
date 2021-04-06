@@ -109,7 +109,7 @@ class WitnessGenerator {
   async compile(circuitDirName) {
     this.circuitDirName = path.resolve(circuitDirName);
     if (this.backend === 'native') {
-      const cpuFeatures = (await si.cpu()).flags.split();
+      const cpuFeatures = (await si.cpu()).flags.split(/\s/);
       const needFeatures = ['bmi2', 'adx'];
       for (const f of needFeatures) {
         if (!cpuFeatures.includes(f)) {
@@ -144,7 +144,7 @@ class WitnessGenerator {
 
       if (genWtnsOut.stderr || genWtnsOut.code != 0) {
         console.error(genWtnsOut.stderr);
-        throw new Error('Could not generate witness. Make sure your CPU supports BMI2/ADX instructions(Apple M1 Rosseta not works)');
+        throw new Error('Could not generate witness');
       }
     } else {
       const snarkjsPath = path.join(require.resolve('snarkjs'), '..', 'cli.cjs');
