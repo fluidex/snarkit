@@ -35,7 +35,7 @@ async function readWtns(fileName) {
 }
 
 // TOOD: type
-async function checkConstraints(F, constraints, witness) {
+async function checkConstraints(F, constraints, witness, signals) {
   if (!constraints) {
     throw new Error('empty constraints');
   }
@@ -47,8 +47,21 @@ async function checkConstraints(F, constraints, witness) {
     const a = evalLC(constraint[0]);
     const b = evalLC(constraint[1]);
     const c = evalLC(constraint[2]);
+    if (!F.isZero(F.sub(F.mul(a, b), c))) {
+      console.log('invalid constraint, related signals:');
+      let sigs = new Set<number>();
+      for (const c of constraint) {
+        for (const s in c) {
+          sigs.add(Number(s));
+        }
+      }
+      for (const s of sigs) {
+        console.log(`Signal ${s}: ${(signals[s].join(' '))}`);
+      }
+      console.log('please check your circuit and input');
 
-    assert(F.isZero(F.sub(F.mul(a, b), c)), "Constraint doesn't match");
+      throw new Error("Constraint doesn't match");
+    }
   }
 
   function evalLC(lc) {
@@ -90,19 +103,29 @@ async function assertOut(symbols, actualOut, expectedOut) {
 
 async function readSymbols(path: string) {
   let symbols = {};
+  let signals = {};
 
   const symsStr = await fs.promises.readFile(path, 'utf8');
   const lines = symsStr.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const arr = lines[i].split(',');
     if (arr.length != 4) continue;
-    symbols[arr[3]] = {
-      labelIdx: Number(arr[0]),
-      varIdx: Number(arr[1]),
-      componentIdx: Number(arr[2]),
+    const symbol = arr[3];
+    const labelIdx = Number(arr[0]);
+    const varIdx = Number(arr[1]);
+    const componentIdx = Number(arr[2]);
+    symbols[symbol] = {
+      labelIdx,
+      varIdx,
+      componentIdx,
     };
+    if (signals[varIdx] == null) {
+      signals[varIdx] = [symbol];
+    } else {
+      signals[varIdx].push(symbol);
+    }
   }
-  return symbols;
+  return { symbols, signals };
 }
 
 class Checker {
@@ -110,13 +133,16 @@ class Checker {
   symFilepath: string;
   r1cs: any;
   symbols: any;
+  signals: any;
   constructor(r1csFilepath, symFilepath) {
     this.r1csFilepath = r1csFilepath;
     this.symFilepath = symFilepath;
   }
   async load() {
     this.r1cs = await readR1cs(this.r1csFilepath, true, false);
-    this.symbols = await readSymbols(this.symFilepath);
+    const { symbols, signals } = await readSymbols(this.symFilepath);
+    this.symbols = symbols;
+    this.signals = signals;
   }
 
   async checkConstraintsAndOutput(witnessFilePath, expectedOutputFile) {
@@ -129,7 +155,7 @@ class Checker {
     }
     const F = new ZqField(this.r1cs.prime);
     const constraints = this.r1cs.constraints;
-    await checkConstraints(F, constraints, witness);
+    await checkConstraints(F, constraints, witness, this.signals);
     // 2. check output
     if (expectedOutputFile) {
       if (fs.existsSync(expectedOutputFile)) {

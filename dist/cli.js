@@ -6,7 +6,7 @@ const commander_1 = require("commander");
 async function main() {
     try {
         const program = new commander_1.Command();
-        program.version('0.0.3');
+        program.version('0.0.4');
         program
             .command('compile <circuit_dir>')
             .description('compile a circom circuit dir')
