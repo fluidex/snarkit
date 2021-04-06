@@ -4,6 +4,7 @@ exports.compileCircuitDir = exports.WitnessGenerator = void 0;
 const fs = require("fs");
 const path = require("path");
 const shelljs = require("shelljs");
+const si = require('systeminformation');
 const { stringifyBigInts, unstringifyBigInts } = require('ffjavascript').utils;
 const { wtns } = require('snarkjs');
 //import {compiler} from "circom";
@@ -101,6 +102,17 @@ class WitnessGenerator {
     }
     async compile(circuitDirName) {
         this.circuitDirName = path.resolve(circuitDirName);
+        if (this.backend === 'native') {
+            const cpuFeatures = (await si.cpu()).flags.split();
+            const needFeatures = ['bmi2', 'adx'];
+            for (const f of needFeatures) {
+                if (!cpuFeatures.includes(f)) {
+                    console.log(`cpu missing needed feature ${f} for native backend, fallback to wasm`);
+                    this.backend = 'wasm';
+                    break;
+                }
+            }
+        }
         const { r1csFilepath, symFilepath, binaryFilePath } = await compileCircuitDir(this.circuitDirName, {
             alwaysRecompile: this.alwaysRecompile,
             verbose: this.verbose,
