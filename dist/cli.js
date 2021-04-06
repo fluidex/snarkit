@@ -12,7 +12,7 @@ async function main() {
             .description('compile a circom circuit dir')
             .option('-f, --force_recompile', 'ignore compiled files', false)
             .option('-v, --verbose', 'print verbose log', false)
-            .option('-b, --backend <string>', 'native or wasm', 'wasm')
+            .option('-b, --backend <string>', 'native or wasm', 'native')
             .action(async (circuit_dir, options) => {
             await index_1.compileCircuitDir(circuit_dir, {
                 alwaysRecompile: options.force_recompile,
@@ -26,7 +26,7 @@ async function main() {
             .option('-d, --data_dir <string>', 'all input.json/output.json inside this dir will be tested', '')
             .option('-f, --force_recompile', 'ignore compiled files', false)
             .option('-v, --verbose', 'print verbose log', false)
-            .option('-b, --backend <string>', 'native or wasm', 'wasm')
+            .option('-b, --backend <string>', 'native or wasm', 'native')
             .option('-w, --witness_type <string>', 'bin or text', 'text')
             .description('test a circom circuit with given inputs/outputs')
             .action(async (circuit_dir, options) => {
