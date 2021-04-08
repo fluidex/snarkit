@@ -33,7 +33,7 @@ $ npx snarkit check num2bits --backend wasm
 
 # use native backend
 # install deps
-$ sudo apt install nlohmann-json3-dev nasm g++
+$ sudo apt install nlohmann-json3-dev nasm g++ libgmp-dev
 # compile the circuit
 $ npx snarkit compile num2bits --backend native
 # test the circuit
