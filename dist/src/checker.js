@@ -49,7 +49,10 @@ async function checkConstraints(F, constraints, witness, signals) {
                 }
             }
             for (const s of sigs) {
-                console.log(`Signal ${s}: ${(signals[s].join(' '))}`);
+                // signal 0 is 'one'
+                if (s != 0) {
+                    console.log(`Signal ${s}: ${signals[s].join(' ')}`);
+                }
             }
             console.log('please check your circuit and input');
             throw new Error("Constraint doesn't match");

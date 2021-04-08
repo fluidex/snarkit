@@ -114,6 +114,7 @@ class WitnessGenerator {
       for (const f of needFeatures) {
         if (!cpuFeatures.includes(f)) {
           console.log(`cpu missing needed feature ${f} for native backend, fallback to wasm`);
+          console.log(`cpus earlier than Intel Boradwell / AMD Ryzen are not supported for native backend`);
           this.backend = 'wasm';
           break;
         }
