@@ -4,12 +4,16 @@ calcwit.hpp
 circom.hpp
 circuit
 circuit.c
+circuit.cpp
+circuit.fast
+circuit.fast.dat
 circuit.dat
 circuit.r1cs
 circuit.sym
 circuit.wasm
 circuit.wtns
 witness.wtns
+witness.json
 fr.asm
 fr.cpp
 fr.hpp
@@ -17,4 +21,3 @@ fr.o
 main.cpp
 utils.cpp
 utils.hpp
-witness.json

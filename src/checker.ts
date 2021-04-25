@@ -5,6 +5,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 const binFileUtils = require('@iden3/binfileutils');
 
+import { groupOrderPrimeStr, groupOrderPrime } from './math';
+
 // copyed from snarkjs/src/wtns_utils.js
 async function readWtnsHeader(fd, sections) {
   await binFileUtils.startReadUniqueSection(fd, sections, 1);
@@ -48,7 +50,27 @@ async function checkConstraints(F, constraints, witness, signals) {
     const b = evalLC(constraint[1]);
     const c = evalLC(constraint[2]);
     if (!F.isZero(F.sub(F.mul(a, b), c))) {
-      console.log('invalid constraint, related signals:');
+      function displayLc(lc) {
+        const entries = Object.entries(lc);
+        if (entries.length == 0) {
+          return '0';
+        }
+        function displayField(x) {
+          const f = BigInt(x);
+          // display some field element as negative int for better reading
+          if (f >= groupOrderPrime - 200n) {
+            return `(-${(groupOrderPrime - f).toString()})`;
+          }
+          return f.toString();
+        }
+        function displayMonomial(coef, signalIdx) {
+          return `${displayField(coef)}*signal${signalIdx}`;
+        }
+        return '(' + entries.map(kv => displayMonomial(kv[1], kv[0])).join(' + ') + ')';
+      }
+      console.log('\nInvalid constraint:');
+      console.log(`${displayLc(constraint[0])} * ${displayLc(constraint[1])} != ${displayLc(constraint[2])}`);
+      console.log('Related signals:');
       let sigs = new Set<number>();
       for (const c of constraint) {
         for (const s in c) {
@@ -58,10 +80,10 @@ async function checkConstraints(F, constraints, witness, signals) {
       for (const s of sigs) {
         // signal 0 is 'one'
         if (s != 0) {
-          console.log(`Signal ${s}: ${signals[s].join(' ')}`);
+          console.log(`signal${s}: ${signals[s].join(' ')}`);
         }
       }
-      console.log('please check your circuit and input');
+      console.log('please check your circuit and input\n');
 
       throw new Error("Constraint doesn't match");
     }

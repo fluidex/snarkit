@@ -7,9 +7,9 @@ const shelljs = require("shelljs");
 const si = require('systeminformation');
 const { stringifyBigInts, unstringifyBigInts } = require('ffjavascript').utils;
 const { wtns } = require('snarkjs');
+const math_1 = require("./math");
 //import {compiler} from "circom";
 //const Scalar = require("ffjavascript").Scalar;
-const primeStr = '21888242871839275222246405745257275088548364400416034343698204186575808495617';
 const NODE_CMD = 'NODE_OPTIONS=--max-old-space-size=8192 node --stack-size=65500';
 function shellExecFnBuilder(verbose) {
     function shellExec(cmd, options = {}) {
@@ -27,18 +27,24 @@ async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath
     cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
     shellExec(cmd);
 }
-async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose }) {
+async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, verbose, alwaysRecompile }) {
     const shellExec = shellExecFnBuilder(verbose);
     const circomRuntimePath = path.join(require.resolve('circom_runtime'), '..', '..');
     const ffiasmPath = path.join(require.resolve('ffiasm'), '..');
     const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
     const cFilepath = path.join(circuitDirName, 'circuit.cpp');
+    if (!alwaysRecompile && fs.existsSync(cFilepath)) {
+        if (verbose) {
+            console.log('skip generate c src', cFilepath);
+        }
+        return;
+    }
     let cmd;
     cmd = `cp ${circomRuntimePath}/c/*.cpp ${circuitDirName}`;
     shellExec(cmd);
     cmd = `cp ${circomRuntimePath}/c/*.hpp ${circuitDirName}`;
     shellExec(cmd);
-    cmd = `node ${ffiasmPath}/src/buildzqfield.js -q ${primeStr} -n Fr`;
+    cmd = `node ${ffiasmPath}/src/buildzqfield.js -q ${math_1.groupOrderPrimeStr} -n Fr`;
     shellExec(cmd, { cwd: circuitDirName });
     if (process.arch !== 'x64') {
         throw 'Unsupported platform ' + process.arch + '. Try wasm backend as an alternative';
@@ -54,24 +60,41 @@ async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePa
     shellExec(cmd);
     cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
     shellExec(cmd);
+    // the binary needs a $arg0.dat file, so we make a symbol link here
+    cmd = `ln -s circuit.dat circuit.fast.dat`;
+    shellExec(cmd, { cwd: circuitDirName });
+}
+async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose, sanityCheck, alwaysRecompile, }) {
+    await generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, verbose, alwaysRecompile });
+    const shellExec = shellExecFnBuilder(verbose);
+    let compileCmd = `g++ ${circuitDirName}/main.cpp ${circuitDirName}/calcwit.cpp ${circuitDirName}/utils.cpp ${circuitDirName}/fr.cpp ${circuitDirName}/fr.o ${circuitDirName}/circuit.cpp -o ${binaryFilePath} -lgmp -std=c++11 -O3`;
     if (process.platform === 'darwin') {
-        cmd = `g++ ${circuitDirName}/main.cpp ${circuitDirName}/calcwit.cpp ${circuitDirName}/utils.cpp ${circuitDirName}/fr.cpp ${circuitDirName}/fr.o ${cFilepath} -o ${binaryFilePath} -lgmp -std=c++11 -O3 -DSANITY_CHECK`;
+        // do nothing
     }
     else if (process.platform === 'linux') {
-        cmd = `g++ -pthread ${circuitDirName}/main.cpp ${circuitDirName}/calcwit.cpp ${circuitDirName}/utils.cpp ${circuitDirName}/fr.cpp ${circuitDirName}/fr.o ${cFilepath} -o ${binaryFilePath} -lgmp -std=c++11 -O3 -fopenmp -DSANITY_CHECK`;
+        compileCmd += ' -pthread -fopenmp';
     }
-    else
+    else {
         throw 'Unsupported platform';
-    shellExec(cmd);
+    }
+    if (sanityCheck) {
+        compileCmd += ' -DSANITY_CHECK';
+    }
+    shellExec(compileCmd);
 }
-async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, backend }) {
+async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, backend, sanityCheck }) {
     // console.log('compiling dir', circuitDirName);
     const circuitFilePath = path.join(circuitDirName, 'circuit.circom');
     const r1csFilepath = path.join(circuitDirName, 'circuit.r1cs');
     const symFilepath = path.join(circuitDirName, 'circuit.sym');
     let binaryFilePath;
     if (backend === 'native') {
-        binaryFilePath = path.join(circuitDirName, 'circuit');
+        if (sanityCheck) {
+            binaryFilePath = path.join(circuitDirName, 'circuit');
+        }
+        else {
+            binaryFilePath = path.join(circuitDirName, 'circuit.fast');
+        }
     }
     else {
         binaryFilePath = path.join(circuitDirName, 'circuit.wasm');
@@ -84,21 +107,37 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
     }
     console.log('compile', circuitDirName);
     if (backend === 'native') {
-        await compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose });
+        await compileNativeBinary({
+            circuitDirName,
+            r1csFilepath,
+            circuitFilePath,
+            symFilepath,
+            binaryFilePath,
+            verbose,
+            sanityCheck,
+            alwaysRecompile,
+        });
     }
     else {
+        // sanity check is not supported for wasm backend now
         await compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose });
     }
     return { circuitFilePath, r1csFilepath, symFilepath, binaryFilePath };
 }
 exports.compileCircuitDir = compileCircuitDir;
 class WitnessGenerator {
-    constructor(name, { backend, alwaysRecompile, verbose } = { backend: 'native', alwaysRecompile: true, verbose: false }) {
+    constructor(name, { backend, alwaysRecompile, verbose, sanityCheck } = { backend: 'native', alwaysRecompile: true, verbose: false, sanityCheck: true }) {
         this.name = name;
         // we can specify cached files to avoid compiling every time
         this.alwaysRecompile = alwaysRecompile;
         this.verbose = verbose;
         this.backend = backend;
+        this.sanityCheck = sanityCheck;
+        if (this.verbose) {
+            if (this.backend == 'wasm' && this.sanityCheck) {
+                console.log('WARN: sanity check is not supported for wasm backend now');
+            }
+        }
     }
     async compile(circuitDirName) {
         this.circuitDirName = path.resolve(circuitDirName);
@@ -118,6 +157,7 @@ class WitnessGenerator {
             alwaysRecompile: this.alwaysRecompile,
             verbose: this.verbose,
             backend: this.backend,
+            sanityCheck: this.sanityCheck,
         });
         this.binaryFilePath = binaryFilePath;
         return { r1csFilepath, symFilepath };
@@ -133,9 +173,15 @@ class WitnessGenerator {
         // gen witness
         if (this.backend === 'native') {
             cmd = `${this.binaryFilePath} ${inputFilePath} ${witnessFilePath}`;
-            const genWtnsOut = shelljs.exec(cmd);
+            if (this.verbose) {
+                console.log(cmd);
+            }
+            const genWtnsOut = shelljs.exec(cmd, { silent: !this.verbose });
             if (genWtnsOut.stderr || genWtnsOut.code != 0) {
-                console.error(genWtnsOut.stderr);
+                if (!this.verbose) {
+                    // don't display stderr twice
+                    console.error('\n' + genWtnsOut.stderr);
+                }
                 throw new Error('Could not generate witness');
             }
         }

@@ -5,12 +5,13 @@ import { Command } from 'commander';
 async function main() {
   try {
     const program = new Command();
-    program.version('0.0.4');
+    program.version('0.0.5');
 
     program
       .command('compile <circuit_dir>')
       .description('compile a circom circuit dir')
       .option('-f, --force_recompile', 'ignore compiled files', false)
+      .option('-s, --sanity_check', 'check constraints when generate witness', false)
       .option('-v, --verbose', 'print verbose log', false)
       .option('-b, --backend <string>', 'native or wasm', 'native')
       .action(async (circuit_dir, options) => {
@@ -18,6 +19,7 @@ async function main() {
           alwaysRecompile: options.force_recompile,
           verbose: options.verbose,
           backend: options.backend,
+          sanityCheck: options.sanity_check,
         });
       });
 
@@ -26,6 +28,7 @@ async function main() {
       .alias('test')
       .option('-d, --data_dir <string>', 'all input.json/output.json inside this dir will be tested', '')
       .option('-f, --force_recompile', 'ignore compiled files', false)
+      .option('-s, --sanity_check', 'check constraints when generate witness', false)
       .option('-v, --verbose', 'print verbose log', false)
       .option('-b, --backend <string>', 'native or wasm', 'native')
       .option('-w, --witness_type <string>', 'bin or text', 'text')
@@ -35,7 +38,8 @@ async function main() {
           alwaysRecompile: options.force_recompile,
           verbose: options.verbose,
           backend: options.backend,
-          witnessFileType: options.witness_type == 'bin' ? 'wtns' : 'json',
+          witnessFileType: options.witness_type,
+          sanityCheck: options.sanity_check,
         });
       });
 
