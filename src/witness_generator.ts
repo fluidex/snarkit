@@ -165,8 +165,13 @@ class WitnessGenerator {
   async compile(circuitDirName) {
     this.circuitDirName = path.resolve(circuitDirName);
     if (this.backend === 'native') {
-      const cpuFeatures = (await si.cpu()).flags.split(/\s/);
       const needFeatures = ['bmi2', 'adx'];
+      let cpuFeatures = (await si.cpu()).flags.split(/\s/);
+      if (process.platform === 'darwin') {
+        const stdout = shelljs.exec('sysctl machdep.cpu.leaf7_features', { silent: true });
+        const features = stdout.trim().toLowerCase().split(/\s/).slice(1);
+        cpuFeatures.push(...features);
+      }
       for (const f of needFeatures) {
         if (!cpuFeatures.includes(f)) {
           console.log(`cpu missing needed feature ${f} for native backend, fallback to wasm`);
