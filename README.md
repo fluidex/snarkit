@@ -1,6 +1,6 @@
 # snarkit
 
-A toolkit for circom circuit development.
+A "gcc + gdb" in [circom](https://github.com/iden3/circom) ecosystem.
 
 # Features
 
