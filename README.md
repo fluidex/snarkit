@@ -1,6 +1,6 @@
 # snarkit
 
-A toolkit for circom circuit development.
+A toolkit to compile and debug circom circuit.
 
 # Features
 
