@@ -1,6 +1,6 @@
 {
   "name": "snarkit",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A command line tool to test circom circuit with given inputs/outputs",
   "main": "./dist/index.js",
   "bin": {

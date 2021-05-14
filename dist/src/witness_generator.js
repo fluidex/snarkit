@@ -33,7 +33,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
     const ffiasmPath = path.join(require.resolve('ffiasm'), '..');
     const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
     const cFilepath = path.join(circuitDirName, 'circuit.cpp');
-    if (!alwaysRecompile && fs.existsSync(cFilepath)) {
+    if (!alwaysRecompile && fs.existsSync(cFilepath) && fs.statSync(cFilepath).size > 0) {
         if (verbose) {
             console.log('skip generate c src', cFilepath);
         }
@@ -99,7 +99,7 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
     else {
         binaryFilePath = path.join(circuitDirName, 'circuit.wasm');
     }
-    if (!alwaysRecompile && fs.existsSync(binaryFilePath)) {
+    if (!alwaysRecompile && fs.existsSync(binaryFilePath) && fs.statSync(binaryFilePath).size > 0) {
         if (verbose) {
             console.log('skip compiling binary ', binaryFilePath);
         }

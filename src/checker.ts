@@ -80,7 +80,7 @@ async function checkConstraints(F, constraints, witness, signals) {
       for (const s of sigs) {
         // signal 0 is 'one'
         if (s != 0) {
-          console.log(`signal${s}: ${signals[s].join(' ')}`);
+          console.log(`signal${s}: ${signals[s].join(' ')}, value: ${witness[s]}`);
         }
       }
       console.log('please check your circuit and input\n');
