@@ -1,6 +1,6 @@
 {
   "name": "snarkit",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A command line tool to test circom circuit with given inputs/outputs",
   "main": "./dist/index.js",
   "bin": {
@@ -8,6 +8,7 @@
   },
   "build": "npx tsc",
   "scripts": {
+    "fmt": "npx prettier --write \"**/*.{js,ts}\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

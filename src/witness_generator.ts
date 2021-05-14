@@ -10,6 +10,10 @@ import { groupOrderPrimeStr, groupOrderPrime } from './math';
 
 const NODE_CMD = 'NODE_OPTIONS=--max-old-space-size=8192 node --stack-size=65500';
 
+function isEmptyFile(filePath) {
+  return !fs.existsSync(filePath) || fs.statSync(filePath).size == 0;
+}
+
 function shellExecFnBuilder(verbose) {
   function shellExec(cmd, options = {}) {
     if (verbose) {
@@ -25,7 +29,10 @@ async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath
   const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
   let cmd: string;
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
-  shellExec(cmd);
+  shellExec(cmd, { fatal: true });
+  if (isEmptyFile(binaryFilePath)) {
+    throw new Error('compile failed. ' + cmd);
+  }
 }
 
 async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, verbose, alwaysRecompile }) {
@@ -60,7 +67,10 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
   shellExec(cmd);
 
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
-  shellExec(cmd);
+  shellExec(cmd, { fatal: true });
+  if (isEmptyFile(cFilepath)) {
+    throw new Error('compile failed. ' + cmd);
+  }
 
   // the binary needs a $arg0.dat file, so we make a symbol link here
   cmd = `ln -s circuit.dat circuit.fast.dat`;
