@@ -1,6 +1,6 @@
 {
   "name": "snarkit",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A command line tool to test circom circuit with given inputs/outputs",
   "main": "./dist/index.js",
   "bin": {
@@ -9,7 +9,8 @@
   "build": "npx tsc",
   "scripts": {
     "fmt": "npx prettier --write \"**/*.{js,ts}\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docker": "docker buildx build --platform linux/amd64 --load -t fluidex/snarkit ."
   },
   "repository": {
     "type": "git",

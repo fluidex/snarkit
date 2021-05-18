@@ -148,24 +148,27 @@ class WitnessGenerator {
             }
         }
     }
+    async chooseBackend() {
+        const needFeatures = ['bmi2', 'adx'];
+        let cpuFeatures = (await si.cpu()).flags.split(/\s/);
+        if (process.platform === 'darwin') {
+            const stdout = shelljs.exec('sysctl machdep.cpu.leaf7_features', { silent: true });
+            const features = stdout.trim().toLowerCase().split(/\s/).slice(1);
+            cpuFeatures.push(...features);
+        }
+        for (const f of needFeatures) {
+            if (!cpuFeatures.includes(f)) {
+                console.log(`cpu missing needed feature ${f} for native backend, fallback to wasm`);
+                console.log(`cpus earlier than Intel Boradwell / AMD Ryzen are not supported for native backend`);
+                return 'wasm';
+            }
+        }
+        return 'native';
+    }
     async compile(circuitDirName) {
         this.circuitDirName = path.resolve(circuitDirName);
-        if (this.backend === 'native') {
-            const needFeatures = ['bmi2', 'adx'];
-            let cpuFeatures = (await si.cpu()).flags.split(/\s/);
-            if (process.platform === 'darwin') {
-                const stdout = shelljs.exec('sysctl machdep.cpu.leaf7_features', { silent: true });
-                const features = stdout.trim().toLowerCase().split(/\s/).slice(1);
-                cpuFeatures.push(...features);
-            }
-            for (const f of needFeatures) {
-                if (!cpuFeatures.includes(f)) {
-                    console.log(`cpu missing needed feature ${f} for native backend, fallback to wasm`);
-                    console.log(`cpus earlier than Intel Boradwell / AMD Ryzen are not supported for native backend`);
-                    this.backend = 'wasm';
-                    break;
-                }
-            }
+        if (this.backend === 'auto') {
+            this.backend = await this.chooseBackend();
         }
         const { r1csFilepath, symFilepath, binaryFilePath } = await compileCircuitDir(this.circuitDirName, {
             alwaysRecompile: this.alwaysRecompile,

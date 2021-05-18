@@ -5,7 +5,7 @@ import { Command } from 'commander';
 async function main() {
   try {
     const program = new Command();
-    program.version('0.0.7');
+    program.version('0.0.8');
 
     program
       .command('compile <circuit_dir>')
@@ -13,7 +13,7 @@ async function main() {
       .option('-f, --force_recompile', 'ignore compiled files', false)
       .option('-s, --sanity_check', 'check constraints when generate witness', false)
       .option('-v, --verbose', 'print verbose log', false)
-      .option('-b, --backend <string>', 'native or wasm', 'native')
+      .option('-b, --backend <string>', 'native|wasm|auto', 'auto')
       .action(async (circuit_dir, options) => {
         await compileCircuitDir(circuit_dir, {
           alwaysRecompile: options.force_recompile,
@@ -30,7 +30,7 @@ async function main() {
       .option('-f, --force_recompile', 'ignore compiled files', false)
       .option('-s, --sanity_check', 'check constraints when generate witness', false)
       .option('-v, --verbose', 'print verbose log', false)
-      .option('-b, --backend <string>', 'native or wasm', 'native')
+      .option('-b, --backend <string>', 'native|wasm|auto', 'auto')
       .option('-w, --witness_type <string>', 'bin or text', 'text')
       .description('test a circom circuit with given inputs/outputs')
       .action(async (circuit_dir, options) => {

@@ -26,6 +26,7 @@ declare class WitnessGenerator {
         verbose: boolean;
         sanityCheck: boolean;
     });
+    chooseBackend(): Promise<"native" | "wasm">;
     compile(circuitDirName: any): Promise<{
         r1csFilepath: string;
         symFilepath: string;
