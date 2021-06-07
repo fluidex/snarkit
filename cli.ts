@@ -5,7 +5,7 @@ import { Command } from 'commander';
 async function main() {
   try {
     const program = new Command();
-    program.version('0.0.8');
+    program.version('0.0.9');
 
     program
       .command('compile <circuit_dir>')

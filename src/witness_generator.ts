@@ -8,7 +8,9 @@ import { groupOrderPrimeStr, groupOrderPrime } from './math';
 //import {compiler} from "circom";
 //const Scalar = require("ffjavascript").Scalar;
 
-const NODE_CMD = 'NODE_OPTIONS=--max-old-space-size=8192 node --stack-size=65500';
+const DEFAULT_NODE_ARGS = '--max-old-space-size=8192 --stack-size=65500';
+const NODE_ARGS = process.env.NODE_ARGS || DEFAULT_NODE_ARGS;
+const NODE_CMD = `node ${NODE_ARGS}`;
 
 function isEmptyFile(filePath) {
   return !fs.existsSync(filePath) || fs.statSync(filePath).size == 0;
@@ -26,9 +28,12 @@ function shellExecFnBuilder(verbose) {
 
 async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose }) {
   const shellExec = shellExecFnBuilder(verbose);
-  const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
+  const circomcliPath = process.env.CIRCOM_CLI || path.join(require.resolve('circom'), '..', 'cli.js');
   let cmd: string;
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
+  if (verbose) {
+    cmd += ' -v';
+  }
   shellExec(cmd, { fatal: true });
   if (isEmptyFile(binaryFilePath)) {
     throw new Error('compile failed. ' + cmd);
@@ -39,7 +44,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
   const shellExec = shellExecFnBuilder(verbose);
   const circomRuntimePath = path.join(require.resolve('circom_runtime'), '..', '..');
   const ffiasmPath = path.join(require.resolve('ffiasm'), '..');
-  const circomcliPath = path.join(require.resolve('circom'), '..', 'cli.js');
+  const circomcliPath = process.env.CIRCOM_CLI || path.join(require.resolve('circom'), '..', 'cli.js');
   const cFilepath = path.join(circuitDirName, 'circuit.cpp');
 
   if (!alwaysRecompile && fs.existsSync(cFilepath) && fs.statSync(cFilepath).size > 0) {
@@ -67,6 +72,9 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
   shellExec(cmd);
 
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
+  if (verbose) {
+    cmd += ' -v';
+  }
   shellExec(cmd, { fatal: true });
   if (isEmptyFile(cFilepath)) {
     throw new Error('compile failed. ' + cmd);
@@ -169,6 +177,7 @@ class WitnessGenerator {
       if (this.backend == 'wasm' && this.sanityCheck) {
         console.log('WARN: sanity check is not supported for wasm backend now');
       }
+      console.log(`node: ${shelljs.which('node')} ${NODE_ARGS}`);
     }
   }
 
