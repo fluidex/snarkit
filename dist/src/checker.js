@@ -153,7 +153,10 @@ class Checker {
         this.signals = signals;
     }
     async checkConstraintsAndOutput(witnessFilePath, expectedOutputFile) {
-        // 1. check constraints
+        // 0. load r1cs and witness
+        if (!this.r1cs) {
+            await this.load();
+        }
         let witness;
         if (witnessFilePath.endsWith('json')) {
             witness = JSON.parse(fs.readFileSync(witnessFilePath).toString());
@@ -161,6 +164,7 @@ class Checker {
         else {
             witness = await readWtns(witnessFilePath);
         }
+        // 1. check constraints
         const F = new ZqField(this.r1cs.prime);
         const constraints = this.r1cs.constraints;
         await checkConstraints(F, constraints, witness, this.signals);

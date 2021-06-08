@@ -10,7 +10,7 @@ const { wtns } = require('snarkjs');
 const math_1 = require("./math");
 //import {compiler} from "circom";
 //const Scalar = require("ffjavascript").Scalar;
-const DEFAULT_NODE_ARGS = "--max-old-space-size=8192 --stack-size=65500";
+const DEFAULT_NODE_ARGS = '--max-old-space-size=8192 --stack-size=65500';
 const NODE_ARGS = process.env.NODE_ARGS || DEFAULT_NODE_ARGS;
 const NODE_CMD = `node ${NODE_ARGS}`;
 function isEmptyFile(filePath) {

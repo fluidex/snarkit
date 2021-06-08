@@ -1,6 +1,7 @@
 import { WitnessGenerator } from './src/witness_generator';
 import { Checker } from './src/checker';
 import * as path from 'path';
+import * as fs from 'fs';
 import * as utils from './src/utils';
 const walkSync = require('walk-sync');
 
@@ -17,7 +18,6 @@ async function testCircuitDir(circuitDir, dataDir, options) {
   const { r1csFilepath, symFilepath } = await witnessGenerator.compile(circuitDir);
 
   const checker = new Checker(r1csFilepath, symFilepath);
-  await checker.load();
 
   if (dataDir == null || dataDir == '') {
     dataDir = circuitDir;
@@ -31,7 +31,9 @@ async function testCircuitDir(circuitDir, dataDir, options) {
     const witnessFile = path.join(testCaseDir, 'witness.' + witnessFileType);
     const expectedOutputFile = path.join(testCaseDir, 'output.json');
     await witnessGenerator.generateWitness(inputFile, witnessFile);
-    await checker.checkConstraintsAndOutput(witnessFile, expectedOutputFile);
+    if (!options.sanityCheck || fs.existsSync(expectedOutputFile)) {
+      await checker.checkConstraintsAndOutput(witnessFile, expectedOutputFile);
+    }
     console.log('\ntest', testCaseDir, 'done');
   }
 }
