@@ -213,21 +213,25 @@ class WitnessGenerator {
         }
         else {
             const snarkjsPath = path.join(require.resolve('snarkjs'), '..', 'cli.cjs');
-            if (witnessFilePath.endsWith('.wtns')) {
-                cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessFilePath}`;
-                shelljs.exec(cmd);
+            let witnessBinFile;
+            if (witnessFilePath.endsWith('.json')) {
+                witnessBinFile = witnessFilePath.replace(/json$/, 'wtns');
             }
             else {
-                const witnessBinFile = path.join(this.circuitDirName, 'witness.wtns');
-                const sameProcess = true;
-                if (sameProcess) {
-                    const input = unstringifyBigInts(JSON.parse(await fs.promises.readFile(inputFilePath, 'utf8')));
-                    await wtns.calculate(input, this.binaryFilePath, witnessBinFile, defaultWitnessOption());
-                }
-                else {
-                    cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessBinFile}`;
-                    shelljs.exec(cmd);
-                }
+                witnessBinFile = witnessFilePath;
+            }
+            // calculate witness bin file
+            const sameProcess = true;
+            if (sameProcess) {
+                const input = unstringifyBigInts(JSON.parse(await fs.promises.readFile(inputFilePath, 'utf8')));
+                await wtns.calculate(input, this.binaryFilePath, witnessBinFile, defaultWitnessOption());
+            }
+            else {
+                cmd = `${NODE_CMD} ${snarkjsPath} wc ${this.binaryFilePath} ${inputFilePath} ${witnessBinFile}`;
+                shelljs.exec(cmd);
+            }
+            // convert bin witness to json witness if needed
+            if (witnessFilePath.endsWith('.json')) {
                 cmd = `${NODE_CMD} ${snarkjsPath} wej ${witnessBinFile} ${witnessFilePath}`;
                 shelljs.exec(cmd);
             }
