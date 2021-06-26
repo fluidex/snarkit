@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const shelljs = require("shelljs");
 const si = require('systeminformation');
+const crypto = require('crypto');
 const { stringifyBigInts, unstringifyBigInts } = require('ffjavascript').utils;
 const { wtns } = require('snarkjs');
 const math_1 = require("./math");
@@ -99,6 +100,69 @@ async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePa
     }
     shellExec(compileCmd);
 }
+function calculateSrcHashes(contents) {
+    const hashes = new Map();
+    for (const entry of Array.from(contents.entries())) {
+        const checksum = crypto.createHash('md5').update(entry[1], 'utf8').digest('hex');
+        hashes.set(entry[0], checksum);
+    }
+    return hashes;
+}
+function loadOldSrcHashes(src) {
+    const hashesFile = path.join(src, '..', 'srcs.sum');
+    try {
+        const jsonStr = fs.readFileSync(hashesFile, 'utf8');
+        const hashes = new Map(JSON.parse(jsonStr));
+        return hashes;
+    }
+    catch (err) {
+        return null;
+    }
+}
+function writeSrcHashes(hashes, src) {
+    const jsonStr = JSON.stringify(Array.from(hashes.entries()));
+    const hashesFile = path.join(src, '..', 'srcs.sum');
+    fs.writeFileSync(hashesFile, jsonStr, 'utf8');
+}
+function isEqual(srcHashes, oldSrcHashes) {
+    if (srcHashes.length !== oldSrcHashes.length) {
+        return false;
+    }
+    for (const src of Array.from(srcHashes.keys())) {
+        if (!oldSrcHashes.has(src) || oldSrcHashes.get(src) !== srcHashes.get(src)) {
+            return false;
+        }
+    }
+    return true;
+}
+function checkSrcChanged(src) {
+    const circomDir = require.resolve('circom');
+    const parser = require(path.join(circomDir, '..', 'parser/jaz.js')).parser;
+    const srcContents = new Map();
+    traverse(src);
+    const srcHashes = calculateSrcHashes(srcContents);
+    const oldSrcHashes = loadOldSrcHashes(src);
+    if (oldSrcHashes == null || !isEqual(srcHashes, oldSrcHashes)) {
+        writeSrcHashes(srcHashes, src);
+        return true;
+    }
+    else {
+        return false;
+    }
+    function traverse(src) {
+        const content = fs.readFileSync(src, 'utf8');
+        srcContents.set(src, content);
+        const ast = parser.parse(content);
+        for (const stat of ast.statements) {
+            if (stat.type == 'INCLUDE') {
+                const includedFile = path.normalize(path.join(src, '..', stat.file));
+                if (!srcContents.has(includedFile)) {
+                    traverse(includedFile);
+                }
+            }
+        }
+    }
+}
 async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, backend, sanityCheck }) {
     // console.log('compiling dir', circuitDirName);
     const circuitFilePath = path.join(circuitDirName, 'circuit.circom');
@@ -116,7 +180,7 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
     else {
         binaryFilePath = path.join(circuitDirName, 'circuit.wasm');
     }
-    if (!alwaysRecompile && fs.existsSync(binaryFilePath) && fs.statSync(binaryFilePath).size > 0) {
+    if (!alwaysRecompile && fs.existsSync(binaryFilePath) && fs.statSync(binaryFilePath).size > 0 && checkSrcChanged(circuitFilePath) === false) {
         if (verbose) {
             console.log('skip compiling binary ', binaryFilePath);
         }

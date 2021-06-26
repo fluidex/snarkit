@@ -12,6 +12,7 @@ circuit.r1cs
 circuit.sym
 circuit.wasm
 circuit.wtns
+srcs.sum
 witness.wtns
 witness.json
 fr.asm
