@@ -100,6 +100,7 @@ async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePa
     }
     shellExec(compileCmd);
 }
+// Calculate md5 checksum for given set of src files.
 function calculateSrcHashes(contents) {
     const hashes = new Map();
     for (const entry of Array.from(contents.entries())) {
@@ -108,6 +109,7 @@ function calculateSrcHashes(contents) {
     }
     return hashes;
 }
+// Load checksums of src files from last compile.
 function loadOldSrcHashes(src) {
     const hashesFile = path.join(src, '..', 'srcs.sum');
     try {
@@ -116,25 +118,40 @@ function loadOldSrcHashes(src) {
         return hashes;
     }
     catch (err) {
+        if (err.code !== 'ENOENT') {
+            console.log('Load old src hash error:', err);
+        }
         return null;
     }
 }
+// Write checksums of src files of this compile.
 function writeSrcHashes(hashes, src) {
     const jsonStr = JSON.stringify(Array.from(hashes.entries()));
     const hashesFile = path.join(src, '..', 'srcs.sum');
     fs.writeFileSync(hashesFile, jsonStr, 'utf8');
 }
-function isEqual(srcHashes, oldSrcHashes) {
-    if (srcHashes.length !== oldSrcHashes.length) {
-        return false;
-    }
+// Check whether the checksums are equal between current src files and last compile.
+function isSrcHashesEqual(srcHashes, oldSrcHashes) {
+    let isEqual = true;
     for (const src of Array.from(srcHashes.keys())) {
-        if (!oldSrcHashes.has(src) || oldSrcHashes.get(src) !== srcHashes.get(src)) {
-            return false;
+        if (!oldSrcHashes.has(src)) {
+            console.log('Added src file: ', src);
+            isEqual = false;
+        }
+        else if (oldSrcHashes.get(src) !== srcHashes.get(src)) {
+            console.log('Changed src file: ', src);
+            isEqual = false;
         }
     }
-    return true;
+    for (const src of Array.from(oldSrcHashes.keys())) {
+        if (!srcHashes.has(src)) {
+            console.log('Removed src file: ', src);
+            isEqual = false;
+        }
+    }
+    return isEqual;
 }
+// Check whether the src files are changed between this run and last compile.
 function checkSrcChanged(src) {
     const circomDir = require.resolve('circom');
     const parser = require(path.join(circomDir, '..', 'parser/jaz.js')).parser;
@@ -142,7 +159,7 @@ function checkSrcChanged(src) {
     traverse(src);
     const srcHashes = calculateSrcHashes(srcContents);
     const oldSrcHashes = loadOldSrcHashes(src);
-    if (oldSrcHashes == null || !isEqual(srcHashes, oldSrcHashes)) {
+    if (oldSrcHashes == null || !isSrcHashesEqual(srcHashes, oldSrcHashes)) {
         writeSrcHashes(srcHashes, src);
         return true;
     }
