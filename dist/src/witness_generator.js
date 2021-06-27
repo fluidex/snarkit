@@ -32,6 +32,7 @@ async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath
     let cmd;
     cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
     if (verbose) {
+        cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
         cmd += ' -v';
     }
     shellExec(cmd, { fatal: true });
@@ -72,6 +73,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
     shellExec(cmd);
     cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
     if (verbose) {
+        cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
         cmd += ' -v';
     }
     shellExec(cmd, { fatal: true });
@@ -79,7 +81,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
         throw new Error('compile failed. ' + cmd);
     }
     // the binary needs a $arg0.dat file, so we make a symbol link here
-    cmd = `ln -s circuit.dat circuit.fast.dat`;
+    cmd = `ln -s -f circuit.dat circuit.fast.dat`;
     shellExec(cmd, { cwd: circuitDirName });
 }
 async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose, sanityCheck, alwaysRecompile, }) {

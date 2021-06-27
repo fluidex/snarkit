@@ -33,6 +33,7 @@ async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath
   let cmd: string;
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
   if (verbose) {
+    cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
     cmd += ' -v';
   }
   shellExec(cmd, { fatal: true });
@@ -74,6 +75,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
 
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
   if (verbose) {
+    cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
     cmd += ' -v';
   }
   shellExec(cmd, { fatal: true });
@@ -82,7 +84,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
   }
 
   // the binary needs a $arg0.dat file, so we make a symbol link here
-  cmd = `ln -s circuit.dat circuit.fast.dat`;
+  cmd = `ln -s -f circuit.dat circuit.fast.dat`;
   shellExec(cmd, { cwd: circuitDirName });
 }
 
@@ -166,7 +168,7 @@ function isSrcHashesEqual(srcHashes, oldSrcHashes) {
 }
 
 // Check whether the src files are changed between this run and last compile.
-function checkSrcChanged(src) : boolean {
+function checkSrcChanged(src): boolean {
   const circomDir = require.resolve('circom');
   const parser = require(path.join(circomDir, '..', 'parser/jaz.js')).parser;
   const srcContents = new Map<string, string>();
@@ -209,7 +211,12 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
   } else {
     binaryFilePath = path.join(circuitDirName, 'circuit.wasm');
   }
-  if (!alwaysRecompile && fs.existsSync(binaryFilePath) && fs.statSync(binaryFilePath).size > 0 && checkSrcChanged(circuitFilePath) === false) {
+  if (
+    !alwaysRecompile &&
+    fs.existsSync(binaryFilePath) &&
+    fs.statSync(binaryFilePath).size > 0 &&
+    checkSrcChanged(circuitFilePath) === false
+  ) {
     if (verbose) {
       console.log('skip compiling binary ', binaryFilePath);
     }
