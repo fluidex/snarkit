@@ -187,7 +187,10 @@ function checkSrcChanged(src): boolean {
     const ast = parser.parse(content);
     for (const stat of ast.statements) {
       if (stat.type == 'INCLUDE') {
-        const includedFile = path.normalize(path.join(src, '..', stat.file));
+        let includedFile = stat.file;
+        if (!path.isAbsolute(includedFile)) {
+          includedFile = path.normalize(path.join(src, '..', includedFile));
+        }
         if (!srcContents.has(includedFile)) {
           traverse(includedFile);
         }

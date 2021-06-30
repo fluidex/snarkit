@@ -174,7 +174,10 @@ function checkSrcChanged(src) {
         const ast = parser.parse(content);
         for (const stat of ast.statements) {
             if (stat.type == 'INCLUDE') {
-                const includedFile = path.normalize(path.join(src, '..', stat.file));
+                let includedFile = stat.file;
+                if (!path.isAbsolute(includedFile)) {
+                    includedFile = path.normalize(path.join(src, '..', includedFile));
+                }
                 if (!srcContents.has(includedFile)) {
                     traverse(includedFile);
                 }
@@ -199,7 +202,10 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
     else {
         binaryFilePath = path.join(circuitDirName, 'circuit.wasm');
     }
-    if (!alwaysRecompile && fs.existsSync(binaryFilePath) && fs.statSync(binaryFilePath).size > 0 && checkSrcChanged(circuitFilePath) === false) {
+    if (!alwaysRecompile &&
+        fs.existsSync(binaryFilePath) &&
+        fs.statSync(binaryFilePath).size > 0 &&
+        checkSrcChanged(circuitFilePath) === false) {
         if (verbose) {
             console.log('skip compiling binary ', binaryFilePath);
         }
