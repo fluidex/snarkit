@@ -71,6 +71,12 @@ $ sudo apt install nlohmann-json3-dev nasm g++ libgmp-dev
 $ npx snarkit compile num2bits --backend native
 # test the circuit
 $ npx snarkit check num2bits --backend native
-
-
 ```
+
+# Misc
+If you encounter `FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory` you can try increasing `max-old-space-size` by setting `NODE_ARGS` ENV to fully utilize your RAM. For example,
+```
+$ export NODE_ARGS='--max-old-space-size=16384'
+$ npx snarkit compile num2bits --backend native -f
+```
+If still encountering error, then you should try compiling it in a machine with larger RAM.
