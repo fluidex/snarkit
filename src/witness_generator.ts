@@ -5,7 +5,7 @@ const si = require('systeminformation');
 const crypto = require('crypto');
 const { stringifyBigInts, unstringifyBigInts } = require('ffjavascript').utils;
 const { wtns } = require('snarkjs');
-import { groupOrderPrimeStr, groupOrderPrime } from './math';
+import { groupOrderPrimeStr, groupOrderPrime } from './crypto';
 //import {compiler} from "circom";
 //const Scalar = require("ffjavascript").Scalar;
 

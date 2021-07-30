@@ -6,7 +6,7 @@ const { ZqField, utils: ffutils } = require('ffjavascript');
 const { assert } = require('chai');
 const fs = require("fs");
 const binFileUtils = require('@iden3/binfileutils');
-const math_1 = require("./math");
+const crypto_1 = require("./crypto");
 // copyed from snarkjs/src/wtns_utils.js
 async function readWtnsHeader(fd, sections) {
     await binFileUtils.startReadUniqueSection(fd, sections, 1);
@@ -50,8 +50,8 @@ async function checkConstraints(F, constraints, witness, signals) {
                 function displayField(x) {
                     const f = BigInt(x);
                     // display some field element as negative int for better reading
-                    if (f >= math_1.groupOrderPrime - 200n) {
-                        return `(-${(math_1.groupOrderPrime - f).toString()})`;
+                    if (f >= crypto_1.groupOrderPrime - 200n) {
+                        return `(-${(crypto_1.groupOrderPrime - f).toString()})`;
                     }
                     return f.toString();
                 }

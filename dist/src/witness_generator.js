@@ -8,7 +8,7 @@ const si = require('systeminformation');
 const crypto = require('crypto');
 const { stringifyBigInts, unstringifyBigInts } = require('ffjavascript').utils;
 const { wtns } = require('snarkjs');
-const math_1 = require("./math");
+const crypto_1 = require("./crypto");
 //import {compiler} from "circom";
 //const Scalar = require("ffjavascript").Scalar;
 const DEFAULT_NODE_ARGS = '--max-old-space-size=8192 --stack-size=65500';
@@ -57,7 +57,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
     shellExec(cmd);
     cmd = `cp ${circomRuntimePath}/c/*.hpp ${circuitDirName}`;
     shellExec(cmd);
-    cmd = `node ${ffiasmPath}/src/buildzqfield.js -q ${math_1.groupOrderPrimeStr} -n Fr`;
+    cmd = `node ${ffiasmPath}/src/buildzqfield.js -q ${crypto_1.groupOrderPrimeStr} -n Fr`;
     shellExec(cmd, { cwd: circuitDirName });
     if (process.arch !== 'x64') {
         throw 'Unsupported platform ' + process.arch + '. Try wasm backend as an alternative';

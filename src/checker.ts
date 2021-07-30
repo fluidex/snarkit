@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 const binFileUtils = require('@iden3/binfileutils');
 
-import { groupOrderPrimeStr, groupOrderPrime } from './math';
+import { groupOrderPrimeStr, groupOrderPrime } from './crypto';
 
 // copyed from snarkjs/src/wtns_utils.js
 async function readWtnsHeader(fd, sections) {
