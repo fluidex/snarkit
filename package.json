@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Fluidex/snarkit.git"
+    "url": "git+https://github.com/fluidex/snarkit.git"
   },
   "keywords": [
     "circom",
@@ -23,9 +23,9 @@
   "author": "lispczz",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Fluidex/snarkit/issues"
+    "url": "https://github.com/fluidex/snarkit/issues"
   },
-  "homepage": "https://github.com/Fluidex/snarkit#readme",
+  "homepage": "https://github.com/fluidex/snarkit#readme",
   "dependencies": {
     "@iden3/binfileutils": "^0.0.8",
     "chai": "^4.3.4",
