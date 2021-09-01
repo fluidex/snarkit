@@ -30,10 +30,15 @@ function shellExecFnBuilder(verbose) {
 async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose }) {
   const shellExec = shellExecFnBuilder(verbose);
   const circomcliPath = process.env.CIRCOM_CLI || path.join(require.resolve('circom'), '..', 'cli.js');
+  const isWindowsShell = process.platform === 'win32'
   let cmd: string;
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -w ${binaryFilePath} -s ${symFilepath}`;
   if (verbose) {
-    cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
+    if (!isWindowsShell){
+      cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
+    }else {
+      console.warn('in windows we can not timing the compilation');
+    }    
     cmd += ' -v';
   }
   shellExec(cmd, { fatal: true });
@@ -44,7 +49,7 @@ async function compileWasmBinary({ circuitDirName, r1csFilepath, circuitFilePath
 
 async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, verbose, alwaysRecompile }) {
   const shellExec = shellExecFnBuilder(verbose);
-  const circomRuntimePath = path.join(require.resolve('circom_runtime'), '..', '..');
+  const circomRuntimePath = path.join(require.resolve('circom_runtime'), '..', '..','c');
   const ffiasmPath = path.join(require.resolve('ffiasm'), '..');
   const circomcliPath = process.env.CIRCOM_CLI || path.join(require.resolve('circom'), '..', 'cli.js');
   const cFilepath = path.join(circuitDirName, 'circuit.cpp');
@@ -56,12 +61,27 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
     return;
   }
 
+  const isWindowsShell = process.platform === 'win32'
+
   let cmd: string;
-  cmd = `cp ${circomRuntimePath}/c/*.cpp ${circuitDirName}`;
-  shellExec(cmd);
-  cmd = `cp ${circomRuntimePath}/c/*.hpp ${circuitDirName}`;
-  shellExec(cmd);
-  cmd = `node ${ffiasmPath}/src/buildzqfield.js -q ${groupOrderPrimeStr} -n Fr`;
+  const circomRuntimePathNR = path.normalize(`${circomRuntimePath}/`);
+  if (isWindowsShell){
+    cmd = `copy /Y ${circomRuntimePathNR}*.cpp ${circuitDirName}`;
+    shellExec(cmd);
+    cmd = `copy /Y ${circomRuntimePathNR}*.hpp ${circuitDirName}`;
+    shellExec(cmd); 
+    //we need to copy some hacking stuff ...
+    const hackingRuntimePath = path.join(path.resolve(__dirname), '..', '..', 'win32', 'runtime');
+    cmd = `copy /Y ${hackingRuntimePath}\\* ${circuitDirName}`;
+    shellExec(cmd); 
+  }else {
+    cmd = `cp ${circomRuntimePathNR}*.cpp ${circuitDirName}`;
+    shellExec(cmd);
+    cmd = `cp ${circomRuntimePathNR}*.hpp ${circuitDirName}`;
+    shellExec(cmd);  
+  }
+  const buildzqfield = path.join(ffiasmPath, 'src', 'buildzqfield.js')
+  cmd = `node ${buildzqfield} -q ${groupOrderPrimeStr} -n Fr`;
   shellExec(cmd, { cwd: circuitDirName });
   if (process.arch !== 'x64') {
     throw 'Unsupported platform ' + process.arch + '. Try wasm backend as an alternative';
@@ -70,12 +90,18 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
     cmd = `nasm -fmacho64 --prefix _  ${circuitDirName}/fr.asm`;
   } else if (process.platform === 'linux') {
     cmd = `nasm -felf64 ${circuitDirName}/fr.asm`;
+  } else if (process.platform === 'win32') {
+    cmd = `nasm -fwin64 ${circuitDirName}\\fr.asm`;
   } else throw 'Unsupported platform';
   shellExec(cmd);
 
   cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
   if (verbose) {
-    cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
+    if (!isWindowsShell){
+      cmd = '/usr/bin/time ' + (process.platform === 'linux' ? '-v' : '-l') + ' ' + cmd;
+    }else {
+      console.warn('in windows we can not timing the compilation');
+    }
     cmd += ' -v';
   }
   shellExec(cmd, { fatal: true });
@@ -84,8 +110,18 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
   }
 
   // the binary needs a $arg0.dat file, so we make a symbol link here
-  cmd = `ln -s -f circuit.dat circuit.fast.dat`;
-  shellExec(cmd, { cwd: circuitDirName });
+  // TODO: should we remove the fast.dat first or skip it in case of the 'force compiling' scheme
+  if (!isWindowsShell){
+    cmd = `ln -s -f circuit.dat circuit.fast.dat`;
+    shellExec(cmd, { cwd: circuitDirName });
+  }else {
+    // under win32 the bin file has extra extensions ...
+    cmd = 'mklink /H circuit.exe.dat circuit.dat '
+    shellExec(cmd, { cwd: circuitDirName });
+    cmd = 'mklink /H circuit.fast.exe.dat circuit.dat '
+    shellExec(cmd, { cwd: circuitDirName });
+  }
+  
 }
 
 async function compileNativeBinary({
@@ -105,6 +141,8 @@ async function compileNativeBinary({
     // do nothing
   } else if (process.platform === 'linux') {
     compileCmd += ' -pthread -fopenmp';
+  } else if (process.platform === 'win32') {
+    compileCmd += ' -lmman';
   } else {
     throw 'Unsupported platform';
   }
@@ -211,6 +249,11 @@ async function compileCircuitDir(circuitDirName, { alwaysRecompile, verbose, bac
     } else {
       binaryFilePath = path.join(circuitDirName, 'circuit.fast');
     }
+
+    if (process.platform === 'win32'){
+      binaryFilePath += '.exe'
+    }
+
   } else {
     binaryFilePath = path.join(circuitDirName, 'circuit.wasm');
   }
@@ -340,7 +383,7 @@ class WitnessGenerator {
         witnessBinFile = witnessFilePath;
       }
       // calculate witness bin file
-      const sameProcess = true;
+      const sameProcess = process.platform !== 'win32';
       if (sameProcess) {
         const input = unstringifyBigInts(JSON.parse(await fs.promises.readFile(inputFilePath, 'utf8')));
         await wtns.calculate(input, this.binaryFilePath, witnessBinFile, defaultWitnessOption());

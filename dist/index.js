@@ -24,7 +24,7 @@ async function testCircuitDir(circuitDir, dataDir, options) {
         dataDir = circuitDir;
     }
     for (const input of walkSync(path.resolve(dataDir), { includeBasePath: true, globs: ['**/input.json'] })) {
-        const testCaseDir = path.dirname(input);
+        const testCaseDir = path.normalize(path.dirname(input));
         //const testCaseName = path.basename(testCaseDir)
         console.log('\ntest', testCaseDir);
         const inputFile = path.join(testCaseDir, 'input.json');
