@@ -58,25 +58,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
         }
         return;
     }
-    const isWindowsShell = process.platform === 'win32';
     let cmd;
-    const circomRuntimePathNR = path.normalize(`${circomRuntimePath}/`);
-    if (isWindowsShell) {
-        cmd = `copy /Y ${circomRuntimePathNR}*.cpp ${circuitDirName}`;
-        shellExec(cmd);
-        cmd = `copy /Y ${circomRuntimePathNR}*.hpp ${circuitDirName}`;
-        shellExec(cmd);
-        //we need to copy some hacking stuff ...
-        const hackingRuntimePath = path.join(path.resolve(__dirname), '..', '..', 'win32', 'runtime');
-        cmd = `copy /Y ${hackingRuntimePath}\\* ${circuitDirName}`;
-        shellExec(cmd);
-    }
-    else {
-        cmd = `cp ${circomRuntimePathNR}*.cpp ${circuitDirName}`;
-        shellExec(cmd);
-        cmd = `cp ${circomRuntimePathNR}*.hpp ${circuitDirName}`;
-        shellExec(cmd);
-    }
     const buildzqfield = path.join(ffiasmPath, 'src', 'buildzqfield.js');
     cmd = `node ${buildzqfield} -q ${crypto_1.groupOrderPrimeStr} -n Fr`;
     shellExec(cmd, { cwd: circuitDirName });
@@ -90,11 +72,31 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
         cmd = `nasm -felf64 ${circuitDirName}/fr.asm`;
     }
     else if (process.platform === 'win32') {
-        cmd = `nasm -fwin64 ${circuitDirName}\\fr.asm`;
+        cmd = `nasm -fwin64 ${circuitDirName}\\fr.asm -o ${circuitDirName}\\fr.o`;
     }
     else
         throw 'Unsupported platform';
     shellExec(cmd);
+    const isWindowsShell = process.platform === 'win32';
+    const circomRuntimePathNR = path.normalize(`${circomRuntimePath}/`);
+    if (isWindowsShell) {
+        cmd = `copy /Y ${circomRuntimePathNR}*.cpp ${circuitDirName}`;
+        shellExec(cmd);
+        cmd = `copy /Y ${circomRuntimePathNR}*.hpp ${circuitDirName}`;
+        shellExec(cmd);
+        //we need to copy some hacking stuff ...
+        const hackingRuntimePath = path.join(path.resolve(__dirname), '..', '..', 'win32', 'runtime');
+        cmd = `copy /Y ${hackingRuntimePath}\\*.hpp ${circuitDirName}`;
+        shellExec(cmd);
+        cmd = `copy /Y ${hackingRuntimePath}\\*.cpp ${circuitDirName}`;
+        shellExec(cmd);
+    }
+    else {
+        cmd = `cp ${circomRuntimePathNR}*.cpp ${circuitDirName}`;
+        shellExec(cmd);
+        cmd = `cp ${circomRuntimePathNR}*.hpp ${circuitDirName}`;
+        shellExec(cmd);
+    }
     cmd = `${NODE_CMD} ${circomcliPath} ${circuitFilePath} -r ${r1csFilepath} -c ${cFilepath} -s ${symFilepath}`;
     if (verbose) {
         if (!isWindowsShell) {
@@ -126,7 +128,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
 async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose, sanityCheck, alwaysRecompile, }) {
     await generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, verbose, alwaysRecompile });
     const shellExec = shellExecFnBuilder(verbose);
-    let compileCmd = `g++ ${circuitDirName}/main.cpp ${circuitDirName}/calcwit.cpp ${circuitDirName}/utils.cpp ${circuitDirName}/fr.cpp ${circuitDirName}/fr.o ${circuitDirName}/circuit.cpp -o ${binaryFilePath} -lgmp -std=c++11 -O3`;
+    let compileCmd = `g++ main.cpp calcwit.cpp utils.cpp fr.cpp fr.o circuit.cpp -o ${binaryFilePath} -lgmp -std=c++11 -O3`;
     if (process.platform === 'darwin') {
         // do nothing
     }
@@ -142,7 +144,7 @@ async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePa
     if (sanityCheck) {
         compileCmd += ' -DSANITY_CHECK';
     }
-    shellExec(compileCmd);
+    shellExec(compileCmd, { cwd: `${circuitDirName}` });
 }
 // Calculate md5 checksum for given set of src files.
 function calculateSrcHashes(contents) {
