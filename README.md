@@ -20,15 +20,15 @@ $ snarkit check ./testdata/num2bits_err/
 Invalid constraint:
 0 * 0 != ((-1)*signal1 + 1*signal2 + 2*signal3 + 4*signal4 + 8*signal5 + 16*signal6 + 32*signal7 + 64*signal8 + 128*signal9)
 Related signals:
-signal1: main.num
-signal2: main.bits[0]
-signal3: main.bits[1]
-signal4: main.bits[2]
-signal5: main.bits[3]
-signal6: main.bits[4]
-signal7: main.bits[5]
-signal8: main.bits[6]
-signal9: main.bits[7]
+signal1: main.num, value: 3
+signal2: main.bits[0], value: 1
+signal3: main.bits[1], value: 1
+signal4: main.bits[2], value: 1
+signal5: main.bits[3], value: 0
+signal6: main.bits[4], value: 0
+signal7: main.bits[5], value: 0
+signal8: main.bits[6], value: 0
+signal9: main.bits[7], value: 0
 please check your circuit and input
 
 # display incorrect code line number
