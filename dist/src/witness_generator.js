@@ -128,7 +128,7 @@ async function generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circu
 async function compileNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, binaryFilePath, verbose, sanityCheck, alwaysRecompile, }) {
     await generateSrcsForNativeBinary({ circuitDirName, r1csFilepath, circuitFilePath, symFilepath, verbose, alwaysRecompile });
     const shellExec = shellExecFnBuilder(verbose);
-    let compileCmd = `g++ main.cpp calcwit.cpp utils.cpp fr.cpp fr.o circuit.cpp -o ${binaryFilePath} -lgmp -std=c++11 -O3`;
+    let compileCmd = `g++ main.cpp calcwit.cpp utils.cpp fr.cpp fr.o circuit.cpp -o ${binaryFilePath} -lgmp -std=c++14 -O3`;
     if (process.platform === 'darwin') {
         // do nothing
     }
